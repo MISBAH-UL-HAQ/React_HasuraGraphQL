@@ -22,13 +22,12 @@
 //   );
 // }
 
-// export default App;
+
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import GetUsers from "./components/Users/GetUsers.jsx";
 import GetPosts from "./components/Posts/GetPosts";
-// Comments component can be implemented later
-// import Comments from "./components/Comments";
+
 
 import "./App.css";
 

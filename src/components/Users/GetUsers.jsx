@@ -1,30 +1,31 @@
-import React, { useState, useEffect } from "react";
+
+import React from "react";
+import { gql, useQuery } from "@apollo/client";
+
+const GET_USERS = gql`
+  query GetUsers {
+    users {
+      id
+      username
+      age
+    }
+  }
+`;
 
 export default function GetUsers() {
-  const [users, setUsers] = useState([]);
+  const { loading, error, data } = useQuery(GET_USERS);
 
-  // Function to fetch users from the API
-  const getUsers = async () => {
-    try {
-      const response = await fetch("https://localhost:7046/api/User", { method: "GET" });
-      const usersData = await response.json();
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  useEffect(() => {
-    getUsers();
-  }, []);
+  if (loading) return <p>Loading users...</p>;
+  if (error) return <p>Error fetching users: {error.message}</p>;
 
   return (
     <div className="card p-4">
       <h2 className="text-center">Users</h2>
       <ul className="list-group">
-        {users.map((user) => (
+        {data.users.map((user) => (
           <li key={user.id} className="list-group-item">
-            <strong>{user.name}</strong> – Age: {user.age}
+           <strong>ID: </strong> {user.id}  –  
+            <strong>  { user.username}</strong> – Age: {user.age}
           </li>
         ))}
       </ul>

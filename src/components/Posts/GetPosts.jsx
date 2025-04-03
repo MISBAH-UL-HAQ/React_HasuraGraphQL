@@ -1,60 +1,76 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
+import { gql, useQuery, useMutation } from "@apollo/client";
+
+const GET_POSTS = gql`
+  query GetPosts {
+    post {
+      id
+      title
+      content
+    }
+  }
+`;
+
+const ADD_POST = gql`
+  mutation AddPost($title: String!, $content: String!, $user_Id: Int!) {
+    insert_post(objects: { title: $title, content: $content, user_Id: $user_Id }) {
+      returning {
+        id
+        title
+        content
+      }
+    }
+  }
+`;
+
+const DELETE_POST = gql`
+  mutation DeletePost($id: Int!) {
+    delete_post_by_pk(id: $id) {
+      id
+    }
+  }
+`;
 
 export default function GetPosts() {
-  const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState({ title: "", content: "", user_Id: "" });
+  const { loading, error, data, refetch } = useQuery(GET_POSTS);
 
-  // Function to fetch posts from the API
-  const getPosts = async () => {
-    try {
-      const response = await fetch("https://localhost:7046/api/Post", { method: "GET" });
-      const postsData = await response.json();
-      setPosts(postsData);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    }
-  };
+  const [addPostMutation] = useMutation(ADD_POST);
+  const [deletePostMutation] = useMutation(DELETE_POST);
 
-  useEffect(() => {
-    getPosts();
-  }, []);
+  if (loading) return <p>Loading posts...</p>;
+  if (error) return <p>Error fetching posts: {error.message}</p>;
 
-  // Function to add a new post using the API
   const addPost = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://localhost:7145/api/Post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPost)
+      await addPostMutation({
+        variables: {
+          title: newPost.title,
+          content: newPost.content,
+          user_Id: parseInt(newPost.user_Id, 10)
+        }
       });
-      if (response.ok) {
-        alert("New post added successfully");
-        // Refresh the posts list
-        getPosts();
-        // Clear the form fields
-        setNewPost({ title: "", content: "", user_Id: "" });
-      } else {
-        alert("Problem in saving post");
-      }
-    } catch (error) {
-      console.error("Error adding post:", error);
+      alert("New post added successfully");
+      refetch();
+      setNewPost({ title: "", content: "", user_Id: "" });
+    } catch (err) {
+      console.error("Error adding post:", err);
+      alert("Problem in saving post");
     }
   };
 
-
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`https://localhost:7046/api/Post/${id}`, { method: "DELETE" });
-      if (response.ok) {
-        alert("Post deleted successfully");
-   
-        setPosts(posts.filter((post) => post.id !== id));
-      } else {
-        alert("Post not deleted");
-      }
-    } catch (error) {
-      console.error("Error deleting post:", error);
+      await deletePostMutation({
+        variables: { id }
+      });
+      alert("Post deleted successfully");
+      refetch();
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Post not deleted");
     }
   };
 
@@ -62,15 +78,18 @@ export default function GetPosts() {
     <div className="card p-4">
       <h2 className="text-center">Posts</h2>
       <ul className="list-group">
-        {posts.map((post) => (
+        {data.post.map((post) => (
           <li key={post.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <strong>{post.title}</strong> - {post.content}
-            </div>
-            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(post.id)}>
-              Delete
-            </button>
-          </li>
+          <div>
+            <strong>ID: {post.id}</strong>
+            <br />
+            <strong>{post.title}</strong> - {post.content}
+          </div>
+          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(post.id)}>
+            Delete
+          </button>
+        </li>
+        
         ))}
       </ul>
       <h3 className="mt-4">Add a Post</h3>
